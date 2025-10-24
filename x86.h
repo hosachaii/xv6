@@ -150,20 +150,21 @@ lcr3(uint val)
 struct trapframe {
   // registers as pushed by pusha
   /*  hosachai 
-      popped by popal in trapret.
+      these registers are pushed and popped with
+      a single instruction in reverse order.
   */
-  uint edi;
+  uint edi;				// pushed last/ popped first.
   uint esi;
   uint ebp;
   uint oesp;      // useless & ignored
   uint ebx;
   uint edx;
   uint ecx;
-  uint eax;
+  uint eax;				// pushed first/ popped last.
 
   // rest of trap frame
   /*  hosachai 
-      popped by popl in trapret.
+      pushed and popped individually (i.e explicitly)
   */
   ushort gs;
   ushort padding1;
@@ -177,6 +178,7 @@ struct trapframe {
 
   // below here defined by x86 hardware
   /*  hosachai 
+      pushed upon encountering "int".
       popped while executing iret in trapret.
   */
   uint err;
