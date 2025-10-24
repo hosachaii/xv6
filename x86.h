@@ -149,6 +149,9 @@ lcr3(uint val)
 // hardware and by trapasm.S, and passed to trap().
 struct trapframe {
   // registers as pushed by pusha
+  /*  hosachai 
+      popped by popal in trapret.
+  */
   uint edi;
   uint esi;
   uint ebp;
@@ -159,6 +162,9 @@ struct trapframe {
   uint eax;
 
   // rest of trap frame
+  /*  hosachai 
+      popped by popl in trapret.
+  */
   ushort gs;
   ushort padding1;
   ushort fs;
@@ -170,6 +176,9 @@ struct trapframe {
   uint trapno;
 
   // below here defined by x86 hardware
+  /*  hosachai 
+      popped while executing iret in trapret.
+  */
   uint err;
   uint eip;
   ushort cs;

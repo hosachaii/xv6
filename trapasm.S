@@ -15,9 +15,12 @@ alltraps:
   movw %ax, %ds
   movw %ax, %es
 
-  # Call trap(tf), where tf=%esp
+  # Call trap(tf), where tf=%esp (typecasted in argument of trap)
   pushl %esp
   call trap
+  # Now, returned from trap
+  # Pop off the argument (%esp) from the stack.
+  # And execute trapret.
   addl $4, %esp
 
   # Return falls through to trapret...

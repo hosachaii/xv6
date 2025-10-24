@@ -74,6 +74,12 @@ myproc(void) {
 // If found, change state to EMBRYO and initialize
 // state required to run in the kernel.
 // Otherwise return 0.
+/*  hosachai
+	Searches the struct proc array for a slot with state == UNUSED.
+	Upon finding one, sets the state to EMBRYO.
+	This is done while holding the ptable.lock.
+	
+*/
 static struct proc*
 allocproc(void)  //Basically allocproc allocates a struct proc from the array of procs for a new process,then it allocates one page for 
                  //kernel stack for process which goes like trapframe->trapret->context from top to bottom
