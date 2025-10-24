@@ -147,11 +147,15 @@ lcr3(uint val)
 //PAGEBREAK: 36
 // Layout of the trap frame built on the stack by the
 // hardware and by trapasm.S, and passed to trap().
+/*	hosachai
+		These registers are in the order they appear in
+		the stack. (i.e they are pushed in the reverse order.)
+*/
 struct trapframe {
   // registers as pushed by pusha
   /*  hosachai 
       these registers are pushed and popped with
-      a single instruction in reverse order.
+      a single instruction.
   */
   uint edi;				// pushed last/ popped first.
   uint esi;
