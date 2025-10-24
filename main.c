@@ -18,7 +18,7 @@ int
 main(void)
 {
   kinit1(end, P2V(4*1024*1024)); // phys page allocator
-  kvmalloc();      // kernel page table
+  kvmalloc();      // kernel page table=> does all kernel mappings
   mpinit();        // detect other processors
   lapicinit();     // interrupt controller
   seginit();       // segment descriptors
@@ -33,7 +33,7 @@ main(void)
   ideinit();       // disk 
   startothers();   // start other processors
   kinit2(P2V(4*1024*1024), P2V(PHYSTOP)); // must come after startothers()
-  userinit();      // first user process
+  userinit();      // first user process =>allocproc runs first time here,when kstack is created it doesnt need to be mapped because kvmalloc has laready done it using setupkvm
   mpmain();        // finish this processor's setup
 }
 
@@ -99,13 +99,15 @@ startothers(void)
 // hence the __aligned__ attribute.
 // PTE_PS in a page directory entry enables 4Mbyte pages.
 
-__attribute__((__aligned__(PGSIZE)))
-pde_t entrypgdir[NPDENTRIES] = {
+__attribute__((__aligned__(PGSIZE)))     //These mappings are only for entrypgdir
+pde_t entrypgdir[NPDENTRIES] = {         //Size of  this array is 4 KB.
   // Map VA's [0, 4MB) to PA's [0, 4MB)
-  [0] = (0) | PTE_P | PTE_W | PTE_PS,
+  [0] = (0) | PTE_P | PTE_W | PTE_PS,    
   // Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)
-  [KERNBASE>>PDXSHIFT] = (0) | PTE_P | PTE_W | PTE_PS,
+  [KERNBASE>>PDXSHIFT] = (0) | PTE_P | PTE_W | PTE_PS,   //KERNBASE>>PDXSHIFT =0X1000000000=512
 };
+   
+//Entrypgdir is allocated at runtime!!!!!! Hence entry.S can use it.
 
 //PAGEBREAK!
 // Blank page.

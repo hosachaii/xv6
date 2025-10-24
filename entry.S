@@ -1,4 +1,4 @@
-# The xv6 kernel starts executing in this file. This file is linked with
+	# The xv6 kernel starts executing in this file. This file is linked with
 # the kernel C code, so it can refer to kernel symbols such as main().
 # The boot block (bootasm.S and bootmain.c) jumps to entry below.
         
@@ -53,7 +53,7 @@ entry:
   # Turn on paging.
   movl    %cr0, %eax
   orl     $(CR0_PG|CR0_WP), %eax
-  movl    %eax, %cr0
+  movl    %eax, %cr0               
 
   # Set up the stack pointer.
   movl $(stack + KSTACKSIZE), %esp

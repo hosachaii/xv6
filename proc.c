@@ -42,7 +42,8 @@ mycpu(void)
   if(readeflags()&FL_IF)
     panic("mycpu called with interrupts enabled\n");
   
-  apicid = lapicid();
+  apicid = lapicid();   //To find proc->find cpu struct->to find cpu struct find apicid and linearly search in cpu struct array->to find matching cpu we compare apicid->to get apicid we eed lapicid()
+                        //Indirecty->to find proc we need apicid.
   // APIC IDs are not guaranteed to be contiguous. Maybe we should have
   // a reverse map, or reserve a register to store &cpus[i].
   for (i = 0; i < ncpu; ++i) {
@@ -58,10 +59,13 @@ struct proc*
 myproc(void) {
   struct cpu *c;
   struct proc *p;
-  pushcli();
+  pushcli();   //pushcli() will do mycpu()->ncli++;
+               //mycpu()->intena is a boolean that stores whether interrupts were enabled or disabled before pushcli()
+
   c = mycpu();
   p = c->proc;
-  popcli();
+  popcli();    //popcli() will do mycpu()->ncli--;
+               //when mycpu()->ncli==0 then it restores earlier FL_IF value
   return p;
 }
 
@@ -71,14 +75,15 @@ myproc(void) {
 // state required to run in the kernel.
 // Otherwise return 0.
 static struct proc*
-allocproc(void)
+allocproc(void)  //Basically allocproc allocates a struct proc from the array of procs for a new process,then it allocates one page for 
+                 //kernel stack for process which goes like trapframe->trapret->context from top to bottom
 {
   struct proc *p;
   char *sp;
 
   acquire(&ptable.lock);
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)  //linear search for first unused proc struct in proc struct array
     if(p->state == UNUSED)
       goto found;
 
@@ -87,7 +92,7 @@ allocproc(void)
 
 found:
   p->state = EMBRYO;
-  p->pid = nextpid++;
+  p->pid = nextpid++;   //pid is allocated serially from 1 onwards
 
   release(&ptable.lock);
 
@@ -96,7 +101,7 @@ found:
     p->state = UNUSED;
     return 0;
   }
-  sp = p->kstack + KSTACKSIZE;
+  sp = p->kstack + KSTACKSIZE;    //One page is allocated for kstack and KSTACKSIZE=4096,so sp points to top of  page now
 
   // Leave room for trap frame.
   sp -= sizeof *p->tf;
@@ -110,15 +115,16 @@ found:
   sp -= sizeof *p->context;
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
-  p->context->eip = (uint)forkret;
-
+  p->context->eip = (uint)forkret; //forkret releases ptable.lock which was being held by scheduler for every process
+                                   //only for the first process it does some initialization
+                                  //returns to trapret in all cases
   return p;
 }
 
 //PAGEBREAK: 32
 // Set up first user process.
 void
-userinit(void)
+userinit(void)      //supposed to be the bridge from bbot/kernel mode to usr mode
 {
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
@@ -131,16 +137,16 @@ userinit(void)
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
   memset(p->tf, 0, sizeof(*p->tf));
-  p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
-  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
-  p->tf->es = p->tf->ds;
-  p->tf->ss = p->tf->ds;
+  p->tf->cs = (SEG_UCODE << 3) | DPL_USER;    //segment selectors are 16 bits:bit 0-1:(Requested privelege level):bit 2:(0=gdt,1=ldt):bit 3-15:used as index into gdt
+  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;    //here DPL_USER == 0x11; NOTE:xv6 doesnt have an ldt,xv6 GDT has only 6 elements ,GDT[0]==null
+  p->tf->es = p->tf->ds;                      //xv6 has a flat memory model,all segments have base=0 limit=4gb for all segments
+  p->tf->ss = p->tf->ds;                       
   p->tf->eflags = FL_IF;
-  p->tf->esp = PGSIZE;
+  p->tf->esp = PGSIZE;//esp points to top of page given by va p->pgdir
   p->tf->eip = 0;  // beginning of initcode.S
 
-  safestrcpy(p->name, "initcode", sizeof(p->name));
-  p->cwd = namei("/");
+  safestrcpy(p->name, "initcode", sizeof(p->name));    //just giving a name to the process
+  p->cwd = namei("/");                                 //making cwd "/" 
 
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
